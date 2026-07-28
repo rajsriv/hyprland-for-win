@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "caelestia-ui"
+version = "0.1.0"
+description = "A beautiful and interactive tiling window manager overlay for Windows."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+    "PyQt6>=6.4.0",
+]
+
+[project.scripts]
+caelestia = "caelestia.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["caelestia*"]

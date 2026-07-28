@@ -1,0 +1,31 @@
+# Caelestia UI
+
+A beautiful, high-performance, and interactive tiling window manager overlay for Windows.
+
+## Installation
+
+You can install the package locally from this folder:
+
+```powershell
+pip install .
+```
+
+For development and real-time updates of the source files, install in editable mode:
+
+```powershell
+pip install -e .
+```
+
+## Running the Application
+
+Once installed via pip, a console script is automatically registered in your Python script environment. You can launch the application from any Command Prompt or PowerShell window:
+
+```powershell
+caelestia
+```
+
+## Features
+- **Fibonacci Dwindle Tiling**: Automatically tiles resizable windows.
+- **Dynamic Taskbar & Waybar Spacing**: Automatically leaves gaps for taskbars (including auto-hidden taskbars) and docked panels (such as Yasb, PowerToys, or our own topbar).
+- **Global Win+F Shortcut**: Toggles the active window to fullscreen (released from tiling) and throws it back into tiling when pressed again.
+- **System Tray Icon**: Context menu controls for toggling screen margins and switching Top Bar light/dark themes.

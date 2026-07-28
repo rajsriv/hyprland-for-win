@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+caelestia/__init__.py
+caelestia/border_widget.py
+caelestia/main.py
+caelestia/topbar_widget.py
+caelestia_ui.egg-info/PKG-INFO
+caelestia_ui.egg-info/SOURCES.txt
+caelestia_ui.egg-info/dependency_links.txt
+caelestia_ui.egg-info/entry_points.txt
+caelestia_ui.egg-info/requires.txt
+caelestia_ui.egg-info/top_level.txt
