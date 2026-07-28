@@ -2,26 +2,21 @@
 
 A beautiful, high-performance, and interactive tiling window manager overlay for Windows.
 
-## Installation
+## Installation & Running
 
-You can install the package locally from this folder:
+To install and run Caelestia UI, open your PowerShell or Command Prompt and run:
 
 ```powershell
+git clone https://github.com/rajsriv/hyprland-for-win.git
+cd hyprland-for-win
 pip install .
+caelestia
 ```
 
-For development and real-time updates of the source files, install in editable mode:
+For development and real-time updates of the source files, install in editable mode instead:
 
 ```powershell
 pip install -e .
-```
-
-## Running the Application
-
-Once installed via pip, a console script is automatically registered in your Python script environment. You can launch the application from any Command Prompt or PowerShell window:
-
-```powershell
-caelestia
 ```
 
 ## Features
