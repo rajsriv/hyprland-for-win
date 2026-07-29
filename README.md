@@ -1,5 +1,7 @@
 # Caelestia UI
 
+<img src="icon.png" width="128" height="128" alt="Caelestia UI Icon" />
+
 A beautiful, high-performance, and interactive tiling window manager overlay for Windows.
 
 ## Installation & Running

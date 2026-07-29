@@ -682,7 +682,17 @@ def main():
     
     # System Tray setup
     tray_icon = QSystemTrayIcon(app)
-    tray_icon.setIcon(app.style().standardIcon(app.style().StandardPixmap.SP_ComputerIcon))
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(base_dir, "icon.png")
+    if os.path.exists(icon_path):
+        tray_icon.setIcon(QIcon(icon_path))
+    else:
+        root_icon = os.path.join(os.getcwd(), "icon.png")
+        if os.path.exists(root_icon):
+            tray_icon.setIcon(QIcon(root_icon))
+        else:
+            tray_icon.setIcon(app.style().standardIcon(app.style().StandardPixmap.SP_ComputerIcon))
     
     menu = QMenu()
     
