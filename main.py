@@ -337,6 +337,14 @@ def main():
         disable_autostart()
         sys.exit(0)
 
+    # Single-instance lock using a named Windows system Mutex
+    ERROR_ALREADY_EXISTS = 183
+    global _single_instance_mutex
+    _single_instance_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\CaelestiaUI_SingleInstance_Mutex")
+    if ctypes.windll.kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+        print("Another instance of Caelestia UI is already running. Exiting to prevent desktop flickering.")
+        sys.exit(0)
+
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     
