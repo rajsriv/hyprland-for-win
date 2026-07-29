@@ -1,11 +1,198 @@
 import sys
 import ctypes
 from ctypes import wintypes
-from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PyQt6.QtGui import QIcon, QAction
-from PyQt6.QtCore import QTimer, QRectF, QAbstractNativeEventFilter
+from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QWidget, QSlider, QFrame, QLabel, QHBoxLayout, QVBoxLayout
+from PyQt6.QtGui import QIcon, QAction, QPixmap, QFont
+from PyQt6.QtCore import QTimer, QRectF, QAbstractNativeEventFilter, Qt
 from border_widget import BorderWidget
 from topbar_widget import TopbarWidget
+
+class SettingsWindow(QWidget):
+    def __init__(self, is_light, on_change_callback, current_gap, current_margin):
+        super().__init__()
+        self.is_light = is_light
+        self.on_change_callback = on_change_callback
+        
+        self.setWindowTitle("Caelestia Settings")
+        self.setFixedSize(500, 420)
+        
+        self.init_ui(current_gap, current_margin)
+        
+    def init_ui(self, current_gap, current_margin):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
+        
+        # Header layout (Horizontal)
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(15)
+        
+        # App Icon
+        self.lbl_icon = QLabel(self)
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(base_dir, "icon.png")
+        if not os.path.exists(icon_path):
+            icon_path = os.path.join(os.getcwd(), "icon.png")
+        if os.path.exists(icon_path):
+            pix = QPixmap(icon_path)
+            self.lbl_icon.setPixmap(pix.scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        else:
+            self.lbl_icon.setPixmap(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon).pixmap(64, 64))
+            
+        header_layout.addWidget(self.lbl_icon)
+        
+        # Text layout (Vertical)
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+        lbl_title = QLabel("Caelestia UI", self)
+        lbl_title.setFont(QFont("Segoe UI", 22, QFont.Weight.Bold))
+        lbl_title.setObjectName("title")
+        
+        lbl_desc = QLabel("Tiling Window Manager Customization", self)
+        lbl_desc.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        lbl_desc.setObjectName("desc")
+        
+        text_layout.addWidget(lbl_title)
+        text_layout.addWidget(lbl_desc)
+        header_layout.addLayout(text_layout)
+        header_layout.addStretch()
+        
+        layout.addLayout(header_layout)
+        
+        # Divider Line
+        divider = QFrame(self)
+        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setFrameShadow(QFrame.Shadow.Sunken)
+        divider.setObjectName("divider")
+        layout.addWidget(divider)
+        
+        # Slider section
+        slider_layout = QVBoxLayout()
+        slider_layout.setSpacing(15)
+        
+        # 1. Window Gaps
+        gap_header = QHBoxLayout()
+        lbl_gap_title = QLabel("Window Gaps", self)
+        lbl_gap_title.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        lbl_gap_title.setObjectName("setting_title")
+        self.lbl_gap_val = QLabel(f"{current_gap} px", self)
+        self.lbl_gap_val.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        self.lbl_gap_val.setObjectName("setting_val")
+        gap_header.addWidget(lbl_gap_title)
+        gap_header.addStretch()
+        gap_header.addWidget(self.lbl_gap_val)
+        
+        self.slide_gap = QSlider(Qt.Orientation.Horizontal, self)
+        self.slide_gap.setRange(0, 50)
+        self.slide_gap.setValue(current_gap)
+        self.slide_gap.valueChanged.connect(self.gap_changed)
+        
+        slider_layout.addLayout(gap_header)
+        slider_layout.addWidget(self.slide_gap)
+        
+        # 2. Edge Margins
+        margin_header = QHBoxLayout()
+        lbl_margin_title = QLabel("Display Edge Margins", self)
+        lbl_margin_title.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        lbl_margin_title.setObjectName("setting_title")
+        self.lbl_margin_val = QLabel(f"{current_margin} px", self)
+        self.lbl_margin_val.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        self.lbl_margin_val.setObjectName("setting_val")
+        margin_header.addWidget(lbl_margin_title)
+        margin_header.addStretch()
+        margin_header.addWidget(self.lbl_margin_val)
+        
+        self.slide_margin = QSlider(Qt.Orientation.Horizontal, self)
+        self.slide_margin.setRange(0, 50)
+        self.slide_margin.setValue(current_margin)
+        self.slide_margin.valueChanged.connect(self.margin_changed)
+        
+        slider_layout.addLayout(margin_header)
+        slider_layout.addWidget(self.slide_margin)
+        
+        layout.addLayout(slider_layout)
+        layout.addStretch()
+        
+        self.apply_theme()
+        
+    def gap_changed(self, val):
+        self.lbl_gap_val.setText(f"{val} px")
+        self.on_change_callback("gap", val)
+        
+    def margin_changed(self, val):
+        self.lbl_margin_val.setText(f"{val} px")
+        self.on_change_callback("margin", val)
+        
+    def apply_theme(self):
+        if self.is_light:
+            self.setStyleSheet("""
+                QWidget {
+                    background-color: #ffffff;
+                }
+                #title {
+                    color: #1a1a1a;
+                }
+                #desc {
+                    color: #666666;
+                }
+                #setting_title {
+                    color: #333333;
+                }
+                #setting_val {
+                    color: #1a73e8;
+                }
+                #divider {
+                    background-color: #e0e0e0;
+                    max-height: 1px;
+                }
+                QSlider::groove:horizontal {
+                    height: 6px;
+                    background: #e0e0e0;
+                    border-radius: 3px;
+                }
+                QSlider::handle:horizontal {
+                    background: #1a73e8;
+                    width: 16px;
+                    height: 16px;
+                    margin: -5px 0;
+                    border-radius: 8px;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QWidget {
+                    background-color: #1e1e1e;
+                }
+                #title {
+                    color: #ffffff;
+                }
+                #desc {
+                    color: #aaaaaa;
+                }
+                #setting_title {
+                    color: #eeeeee;
+                }
+                #setting_val {
+                    color: #8ab4f8;
+                }
+                #divider {
+                    background-color: #333333;
+                    max-height: 1px;
+                }
+                QSlider::groove:horizontal {
+                    height: 6px;
+                    background: #333333;
+                    border-radius: 3px;
+                }
+                QSlider::handle:horizontal {
+                    background: #8ab4f8;
+                    width: 16px;
+                    height: 16px;
+                    margin: -5px 0;
+                    border-radius: 8px;
+                }
+            """)
 
 # Define RECT structure for Windows API
 class RECT(ctypes.Structure):
@@ -352,6 +539,17 @@ def main():
     topbar = TopbarWidget()
     is_light_theme = True
     
+    window_gap = 10
+    screen_margin = 10
+    
+    def handle_settings_change(name, value):
+        nonlocal window_gap, screen_margin
+        if name == "gap":
+            window_gap = value
+        elif name == "margin":
+            screen_margin = value
+            apply_custom_work_area()
+            
     tiled_windows_by_screen = {}
     managed_hwnds = set()
     dragged_hwnd = None
@@ -383,12 +581,11 @@ def main():
         screen = app.primaryScreen()
         if screen:
             geom = get_screen_working_geom(screen)
-            window_gap = 10
-            # Symmetrical 10px margins on all sides (left, top, right, bottom)
-            new_left = geom.x() + window_gap
-            new_top = geom.y() + window_gap
-            new_right = geom.x() + geom.width() - window_gap
-            new_bottom = geom.y() + geom.height() - window_gap
+            # Symmetrical margins on all sides
+            new_left = geom.x() + screen_margin
+            new_top = geom.y() + screen_margin
+            new_right = geom.x() + geom.width() - screen_margin
+            new_bottom = geom.y() + geom.height() - screen_margin
             set_work_area(new_left, new_top, new_right, new_bottom)
             
     def restore_work_area():
@@ -448,6 +645,12 @@ def main():
         # Must have a text title
         length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
         if length == 0:
+            return False
+            
+        buf = ctypes.create_unicode_buffer(length + 1)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+        title = buf.value
+        if "Caelestia Settings" in title:
             return False
             
         style = ctypes.windll.user32.GetWindowLongW(hwnd, -16)  # GWL_STYLE
@@ -537,16 +740,15 @@ def main():
                     if not border_w:
                         continue
                     geom = get_screen_working_geom(screen)
-                    window_gap = 10
-                    tx = geom.x() + window_gap
-                    ty = geom.y() + window_gap
-                    tw = geom.width() - (2 * window_gap)
-                    th = geom.height() - (2 * window_gap)
+                    tx = geom.x() + screen_margin
+                    ty = geom.y() + screen_margin
+                    tw = geom.width() - (2 * screen_margin)
+                    th = geom.height() - (2 * screen_margin)
                     
                     tiled = tiled_windows_by_screen.get(screen, [])
                     n = len(tiled)
                     if n > 0:
-                        rects = calculate_dwindle_rects(tx, ty, tw, th, n, gap=10)
+                        rects = calculate_dwindle_rects(tx, ty, tw, th, n, gap=window_gap)
                         for i, hwnd in enumerate(tiled):
                             rx, ry, rw, rh = rects[i]
                             x, y, w, h = get_window_rect(hwnd)
@@ -581,13 +783,12 @@ def main():
                 border_w = next((b for b in borders if b.target_screen.name() == target_screen.name()), None)
                 if border_w:
                     geom = get_screen_working_geom(target_screen)
-                    window_gap = 10
-                    tx = geom.x() + window_gap
-                    ty = geom.y() + window_gap
-                    tw = geom.width() - (2 * window_gap)
-                    th = geom.height() - (2 * window_gap)
+                    tx = geom.x() + screen_margin
+                    ty = geom.y() + screen_margin
+                    tw = geom.width() - (2 * screen_margin)
+                    th = geom.height() - (2 * screen_margin)
                     
-                    rects = calculate_dwindle_rects(tx, ty, tw, th, n, gap=10)
+                    rects = calculate_dwindle_rects(tx, ty, tw, th, n, gap=window_gap)
                     
                     # Find slot with the closest center coordinate
                     closest_idx = 0
@@ -615,11 +816,10 @@ def main():
                 
             # Get adjusted geometry taking taskbar into account
             geom = get_screen_working_geom(screen)
-            window_gap = 10
-            target_x = geom.x() + window_gap
-            target_y = geom.y() + window_gap
-            target_w = geom.width() - (2 * window_gap)
-            target_h = geom.height() - (2 * window_gap)
+            target_x = geom.x() + screen_margin
+            target_y = geom.y() + screen_margin
+            target_w = geom.width() - (2 * screen_margin)
+            target_h = geom.height() - (2 * screen_margin)
             
             # Update the border widget's geometry dynamically so it shrinks with the taskbar
             border_w.setGeometry(geom)
@@ -656,7 +856,7 @@ def main():
                         
                 n = len(new_tiled)
                 if n > 0:
-                    rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, n, gap=10)
+                    rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, n, gap=window_gap)
                     for i, hwnd in enumerate(new_tiled):
                         rx, ry, rw, rh = rects[i]
                         
@@ -729,7 +929,22 @@ def main():
     
     exit_action = QAction("Exit Caelestia UI", menu)
     exit_action.triggered.connect(app.quit)
+
+    settings_window = None
     
+    def open_settings():
+        nonlocal settings_window
+        if not settings_window:
+            settings_window = SettingsWindow(is_light_theme, handle_settings_change, window_gap, screen_margin)
+        settings_window.show()
+        settings_window.raise_()
+        settings_window.activateWindow()
+        
+    open_settings_action = QAction("Customization Settings", menu)
+    open_settings_action.triggered.connect(open_settings)
+    
+    menu.addAction(open_settings_action)
+    menu.addSeparator()
     menu.addAction(toggle_border_action)
     menu.addAction(toggle_theme_action)
     menu.addSeparator()
