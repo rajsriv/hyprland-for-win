@@ -294,7 +294,49 @@ def calculate_dwindle_rects(x, y, w, h, n, gap=10):
                 curr_h = curr_h - half_h - gap
     return rects
 
+def get_startup_file_path():
+    import os
+    startup_dir = os.path.join(os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
+    return os.path.join(startup_dir, "caelestia.vbs")
+
+def enable_autostart():
+    import os
+    path = get_startup_file_path()
+    try:
+        # Create VBScript file that launches caelestia invisibly on boot
+        with open(path, "w") as f:
+            f.write('Set WshShell = CreateObject("WScript.Shell")\n')
+            f.write('WshShell.Run "powershell -WindowStyle Hidden -Command Start-Process caelestia -WindowStyle Hidden", 0, False\n')
+        print("Autostart successfully enabled! Caelestia will start silently on boot.")
+    except Exception as e:
+        print(f"Error enabling autostart: {e}")
+
+def disable_autostart():
+    import os
+    path = get_startup_file_path()
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+            print("Autostart successfully disabled!")
+        else:
+            print("Autostart was not enabled.")
+    except Exception as e:
+        print(f"Error disabling autostart: {e}")
+
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Caelestia UI - Tiling Window Manager")
+    parser.add_argument("--autostart", action="store_true", help="Enable autostart on Windows boot")
+    parser.add_argument("--no-autostart", action="store_true", help="Disable autostart on Windows boot")
+    args = parser.parse_known_args()[0]
+    
+    if args.autostart:
+        enable_autostart()
+        sys.exit(0)
+    elif args.no_autostart:
+        disable_autostart()
+        sys.exit(0)
+
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     

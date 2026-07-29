@@ -40,6 +40,23 @@ start pythonw -m caelestia.main
   Stop-Process -Name "caelestia" -Force
   ```
 
+## Autostart on Boot
+
+To automatically start Caelestia UI silently when Windows boots up, you can enable/disable the autostart feature using the following terminal commands:
+
+- **Activate Autostart**:
+  ```powershell
+  caelestia --autostart
+  ```
+  *(Creates a startup script that runs Caelestia silently in the background on login.)*
+
+- **Deactivate Autostart**:
+  ```powershell
+  caelestia --no-autostart
+  ```
+  *(Removes the startup script from the Windows Startup folder.)*
+
+
 
 ## Features
 - **Fibonacci Dwindle Tiling**: Automatically tiles resizable windows.
