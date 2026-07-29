@@ -362,8 +362,8 @@ def main():
                 fullscreen_hwnds.add(active_hwnd)
                 ShowWindow(active_hwnd, 3)  # SW_MAXIMIZE
 
-    # Register Win+F (MOD_WIN = 0x0008, MOD_NOREPEAT = 0x4000, VK_F = 0x46) bound to the topbar widget's HWND
-    ctypes.windll.user32.RegisterHotKey(int(topbar.winId()), 99, 0x0008 | 0x4000, 0x46)
+    # Register Win+Shift+F (MOD_WIN = 0x0008, MOD_SHIFT = 0x0004, MOD_NOREPEAT = 0x4000, VK_F = 0x46) bound to topbar widget's HWND
+    ctypes.windll.user32.RegisterHotKey(int(topbar.winId()), 99, 0x0008 | 0x0004 | 0x4000, 0x46)
     hotkey_filter = HotkeyFilter(toggle_fullscreen_active_window)
     app.installNativeEventFilter(hotkey_filter)
     

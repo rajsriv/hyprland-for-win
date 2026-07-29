@@ -63,5 +63,5 @@ To automatically start Caelestia UI silently when Windows boots up, you can enab
 ## Features
 - **Fibonacci Dwindle Tiling**: Automatically tiles resizable windows.
 - **Dynamic Taskbar & Waybar Spacing**: Automatically leaves gaps for taskbars (including auto-hidden taskbars) and docked panels (such as Yasb, PowerToys, or our own topbar).
-- **Global Win+F Shortcut**: Toggles the active window to fullscreen (released from tiling) and throws it back into tiling when pressed again.
+- **Global Win+Shift+F Shortcut**: Toggles the active window to fullscreen (released from tiling) and throws it back into tiling when pressed again.
 - **System Tray Icon**: Context menu controls for toggling screen margins and switching Top Bar light/dark themes.
