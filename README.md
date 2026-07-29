@@ -19,6 +19,28 @@ For development and real-time updates of the source files, install in editable m
 pip install -e .
 ```
 
+## Running in the Background (Close Terminal)
+
+If you want to keep the application running even after you close your terminal window, start it using one of the following commands:
+
+### PowerShell
+```powershell
+Start-Process caelestia -WindowStyle Hidden
+```
+
+### Command Prompt (CMD)
+```cmd
+start pythonw -m caelestia.main
+```
+
+### How to Stop
+- **System Tray**: Right-click the computer icon in the Windows System Tray (bottom-right taskbar area) and choose **Exit Caelestia UI**.
+- **Terminal command**:
+  ```powershell
+  Stop-Process -Name "caelestia" -Force
+  ```
+
+
 ## Features
 - **Fibonacci Dwindle Tiling**: Automatically tiles resizable windows.
 - **Dynamic Taskbar & Waybar Spacing**: Automatically leaves gaps for taskbars (including auto-hidden taskbars) and docked panels (such as Yasb, PowerToys, or our own topbar).
