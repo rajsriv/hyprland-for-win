@@ -7,6 +7,9 @@ from PyQt6.QtCore import QTimer, QRectF, QAbstractNativeEventFilter, Qt
 from .border_widget import BorderWidget
 from .topbar_widget import TopbarWidget
 
+# Global mutex handle to prevent garbage collection and satisfy static linters
+_single_instance_mutex = None
+
 class SettingsWindow(QWidget):
     def __init__(self, is_light, on_change_callback, current_gap, current_margin):
         super().__init__()
