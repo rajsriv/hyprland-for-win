@@ -546,6 +546,9 @@ def main():
     window_gap = 10
     screen_margin = 10
     screen_ratios_by_screen = {}
+    last_active_hwnd = None
+    last_active_w = 0
+    last_active_h = 0
     
     def handle_settings_change(name, value):
         nonlocal window_gap, screen_margin
@@ -712,7 +715,7 @@ def main():
         return True
 
     def tiling_manager_loop():
-        nonlocal tiled_windows_by_screen, dragged_hwnd
+        nonlocal tiled_windows_by_screen, dragged_hwnd, last_active_hwnd, last_active_w, last_active_h
         if not any(b.isVisible() for b in borders):
             return
             
@@ -722,6 +725,16 @@ def main():
         # VK_LBUTTON = 0x01
         l_button_down = bool(ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000)
         active_hwnd = ctypes.windll.user32.GetForegroundWindow()
+        
+        active_size_changed = False
+        ax_x, ax_y, aw, ah = get_window_rect(active_hwnd) if active_hwnd else (0, 0, 0, 0)
+        if active_hwnd and active_hwnd == last_active_hwnd:
+            if abs(aw - last_active_w) > 2 or abs(ah - last_active_h) > 2:
+                active_size_changed = True
+                
+        last_active_hwnd = active_hwnd
+        last_active_w = aw
+        last_active_h = ah
         
         # Enumerate visible application windows
         current_visible = []
