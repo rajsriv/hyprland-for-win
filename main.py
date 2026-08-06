@@ -880,29 +880,34 @@ def main():
             if l_button_down:
                 if resizing_hwnd and resizing_hwnd in new_tiled:
                     screen_has_resizing = True
-                elif active_hwnd in new_tiled and active_size_changed:
-                    idx = new_tiled.index(active_hwnd)
-                    temp_rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, len(new_tiled), gap=window_gap, ratios=ratios)
-                    if idx < len(temp_rects):
-                        rx, ry, rw, rh = temp_rects[idx]
-                        ax, ay, aw, ah = get_window_rect(active_hwnd)
-                        if abs(aw - rw) > 15 or abs(ah - rh) > 15:
-                            resizing_hwnd = active_hwnd
-                            screen_has_resizing = True
+                elif active_hwnd in new_tiled:
+                    if abs(aw - resize_start_w) > 12 or abs(ah - resize_start_h) > 12:
+                        resizing_hwnd = active_hwnd
+                        screen_has_resizing = True
             else:
                 if resizing_hwnd and resizing_hwnd in new_tiled:
                     idx = new_tiled.index(resizing_hwnd)
                     ax, ay, aw, ah = get_window_rect(resizing_hwnd)
                     
+                    target_split_idx = idx if idx < len(new_tiled) - 1 else idx - 1
+                    if target_split_idx < 0:
+                        target_split_idx = 0
+                        
                     curr_x, curr_y, curr_w, curr_h = target_x, target_y, target_w, target_h
                     for i in range(len(new_tiled)):
-                        if i == idx:
+                        if i == target_split_idx:
                             if curr_w >= curr_h:
-                                new_ratio = aw / (curr_w - window_gap)
+                                if idx == len(new_tiled) - 1:
+                                    new_ratio = (curr_w - aw - window_gap) / (curr_w - window_gap)
+                                else:
+                                    new_ratio = aw / (curr_w - window_gap)
                             else:
-                                new_ratio = ah / (curr_h - window_gap)
+                                if idx == len(new_tiled) - 1:
+                                    new_ratio = (curr_h - ah - window_gap) / (curr_h - window_gap)
+                                else:
+                                    new_ratio = ah / (curr_h - window_gap)
                             new_ratio = max(0.1, min(0.9, new_ratio))
-                            ratios[idx] = new_ratio
+                            ratios[target_split_idx] = new_ratio
                             break
                         
                         ratio = ratios[i] if i < len(ratios) else 0.5
