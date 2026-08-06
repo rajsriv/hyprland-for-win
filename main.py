@@ -461,7 +461,7 @@ def is_cloaked(hwnd):
         return bool(cloaked.value)
     return False
 
-def calculate_dwindle_rects(x, y, w, h, n, gap=10):
+def calculate_dwindle_rects(x, y, w, h, n, gap=10, ratios=None):
     """Calculate Hyprland-style Dwindle (Fibonacci) tiling layout rects."""
     rects = []
     curr_x, curr_y, curr_w, curr_h = x, y, w, h
@@ -470,18 +470,19 @@ def calculate_dwindle_rects(x, y, w, h, n, gap=10):
         if i == n - 1:
             rects.append((curr_x, curr_y, curr_w, curr_h))
         else:
+            ratio = ratios[i] if (ratios and i < len(ratios)) else 0.5
             if curr_w >= curr_h:
                 # Split horizontally (vertical separator line)
-                half_w = (curr_w - gap) // 2
-                rects.append((curr_x, curr_y, half_w, curr_h))
-                curr_x = curr_x + half_w + gap
-                curr_w = curr_w - half_w - gap
+                split_w = int((curr_w - gap) * ratio)
+                rects.append((curr_x, curr_y, split_w, curr_h))
+                curr_x = curr_x + split_w + gap
+                curr_w = curr_w - split_w - gap
             else:
                 # Split vertically (horizontal separator line)
-                half_h = (curr_h - gap) // 2
-                rects.append((curr_x, curr_y, curr_w, half_h))
-                curr_y = curr_y + half_h + gap
-                curr_h = curr_h - half_h - gap
+                split_h = int((curr_h - gap) * ratio)
+                rects.append((curr_x, curr_y, curr_w, split_h))
+                curr_y = curr_y + split_h + gap
+                curr_h = curr_h - split_h - gap
     return rects
 
 def get_startup_file_path():
@@ -544,6 +545,7 @@ def main():
     
     window_gap = 10
     screen_margin = 10
+    screen_ratios_by_screen = {}
     
     def handle_settings_change(name, value):
         nonlocal window_gap, screen_margin
@@ -719,6 +721,7 @@ def main():
         # Check if left mouse button is pressed (drag action)
         # VK_LBUTTON = 0x01
         l_button_down = bool(ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000)
+        active_hwnd = ctypes.windll.user32.GetForegroundWindow()
         
         # Enumerate visible application windows
         current_visible = []
@@ -842,6 +845,42 @@ def main():
                 if hwnd not in new_tiled and hwnd != dragged_hwnd:
                     new_tiled.append(hwnd)
             
+            # Maintain split ratios list
+            ratios = screen_ratios_by_screen.setdefault(screen, [])
+            while len(ratios) < len(new_tiled):
+                ratios.append(0.5)
+                
+            # Detect active window resizes to adjust split ratios dynamically
+            resizing_hwnd = None
+            if l_button_down and active_hwnd in new_tiled:
+                idx = new_tiled.index(active_hwnd)
+                temp_rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, len(new_tiled), gap=window_gap, ratios=ratios)
+                if idx < len(temp_rects):
+                    rx, ry, rw, rh = temp_rects[idx]
+                    ax, ay, aw, ah = get_window_rect(active_hwnd)
+                    if abs(aw - rw) > 10 or abs(ah - rh) > 10:
+                        resizing_hwnd = active_hwnd
+                        curr_x, curr_y, curr_w, curr_h = target_x, target_y, target_w, target_h
+                        for i in range(len(new_tiled)):
+                            if i == idx:
+                                if curr_w >= curr_h:
+                                    new_ratio = aw / (curr_w - window_gap)
+                                else:
+                                    new_ratio = ah / (curr_h - window_gap)
+                                new_ratio = max(0.1, min(0.9, new_ratio))
+                                ratios[idx] = new_ratio
+                                break
+                            
+                            ratio = ratios[i] if i < len(ratios) else 0.5
+                            if curr_w >= curr_h:
+                                split_w = int((curr_w - window_gap) * ratio)
+                                curr_x = curr_x + split_w + window_gap
+                                curr_w = curr_w - split_w - window_gap
+                            else:
+                                split_h = int((curr_h - window_gap) * ratio)
+                                curr_y = curr_y + split_h + window_gap
+                                curr_h = curr_h - split_h - window_gap
+            
             # Check if this screen has any fullscreen window active
             screen_fullscreen_hwnd = next((hwnd for hwnd in new_tiled if hwnd in fullscreen_hwnds), None)
             # Check if layout needs re-tiling (list changed, window maximized, or layout size changed due to taskbar growth)
@@ -854,13 +893,16 @@ def main():
                 
                 # Restore any maximized window
                 for hwnd in new_tiled:
-                    if IsZoomed(hwnd):
+                    if IsZoomed(hwnd) and hwnd != resizing_hwnd:
                         ShowWindow(hwnd, 9)  # SW_RESTORE
                         
                 n = len(new_tiled)
                 if n > 0:
-                    rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, n, gap=window_gap)
+                    rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, n, gap=window_gap, ratios=ratios)
                     for i, hwnd in enumerate(new_tiled):
+                        if hwnd == resizing_hwnd:
+                            continue
+                            
                         rx, ry, rw, rh = rects[i]
                         
                         l_off, t_off, r_off, b_off = get_window_border_offsets(hwnd)
