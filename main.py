@@ -553,6 +553,7 @@ def main():
     last_l_button_down = False
     resize_start_w = 0
     resize_start_h = 0
+    clicked_on_border = False
     
     def handle_settings_change(name, value):
         nonlocal window_gap, screen_margin
@@ -720,7 +721,7 @@ def main():
 
     def tiling_manager_loop():
         nonlocal tiled_windows_by_screen, dragged_hwnd, last_active_hwnd, last_active_w, last_active_h, resizing_hwnd
-        nonlocal last_l_button_down, resize_start_w, resize_start_h
+        nonlocal last_l_button_down, resize_start_w, resize_start_h, clicked_on_border
         if not any(b.isVisible() for b in borders):
             return
             
@@ -743,6 +744,27 @@ def main():
         if mouse_clicked_down:
             resize_start_w = aw
             resize_start_h = ah
+            clicked_on_border = False
+            if active_hwnd:
+                point = wintypes.POINT()
+                ctypes.windll.user32.GetCursorPos(ctypes.byref(point))
+                lParam = (point.y << 16) | (point.x & 0xFFFF)
+                result = ctypes.c_ulonglong(0)
+                res = ctypes.windll.user32.SendMessageTimeoutW(
+                    active_hwnd,
+                    0x0084,  # WM_NCHITTEST
+                    0,
+                    lParam,
+                    0x0002,  # SMTO_ABORTIFHUNG
+                    50,      # 50ms timeout
+                    ctypes.byref(result)
+                )
+                hit_test = result.value if res else 0
+                if 10 <= hit_test <= 17:
+                    clicked_on_border = True
+                    
+        if not l_button_down:
+            clicked_on_border = False
             
         last_active_hwnd = active_hwnd
         last_active_w = aw
@@ -877,7 +899,7 @@ def main():
                 
             # Handle resizing state machine
             screen_has_resizing = False
-            if l_button_down:
+            if l_button_down and clicked_on_border:
                 if resizing_hwnd and resizing_hwnd in new_tiled:
                     screen_has_resizing = True
                 elif active_hwnd in new_tiled:
