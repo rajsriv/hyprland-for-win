@@ -549,6 +549,7 @@ def main():
     last_active_hwnd = None
     last_active_w = 0
     last_active_h = 0
+    resizing_hwnd = None
     
     def handle_settings_change(name, value):
         nonlocal window_gap, screen_margin
@@ -715,7 +716,7 @@ def main():
         return True
 
     def tiling_manager_loop():
-        nonlocal tiled_windows_by_screen, dragged_hwnd, last_active_hwnd, last_active_w, last_active_h
+        nonlocal tiled_windows_by_screen, dragged_hwnd, last_active_hwnd, last_active_w, last_active_h, resizing_hwnd
         if not any(b.isVisible() for b in borders):
             return
             
@@ -863,37 +864,53 @@ def main():
             while len(ratios) < len(new_tiled):
                 ratios.append(0.5)
                 
-            # Detect active window resizes to adjust split ratios dynamically
-            resizing_hwnd = None
-            if l_button_down and active_hwnd in new_tiled:
-                idx = new_tiled.index(active_hwnd)
-                temp_rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, len(new_tiled), gap=window_gap, ratios=ratios)
-                if idx < len(temp_rects):
-                    rx, ry, rw, rh = temp_rects[idx]
-                    ax, ay, aw, ah = get_window_rect(active_hwnd)
-                    if abs(aw - rw) > 10 or abs(ah - rh) > 10:
-                        resizing_hwnd = active_hwnd
-                        curr_x, curr_y, curr_w, curr_h = target_x, target_y, target_w, target_h
-                        for i in range(len(new_tiled)):
-                            if i == idx:
-                                if curr_w >= curr_h:
-                                    new_ratio = aw / (curr_w - window_gap)
-                                else:
-                                    new_ratio = ah / (curr_h - window_gap)
-                                new_ratio = max(0.1, min(0.9, new_ratio))
-                                ratios[idx] = new_ratio
-                                break
-                            
-                            ratio = ratios[i] if i < len(ratios) else 0.5
+            # Handle resizing state machine
+            screen_has_resizing = False
+            if l_button_down:
+                if resizing_hwnd and resizing_hwnd in new_tiled:
+                    screen_has_resizing = True
+                elif active_hwnd in new_tiled and active_size_changed:
+                    idx = new_tiled.index(active_hwnd)
+                    temp_rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, len(new_tiled), gap=window_gap, ratios=ratios)
+                    if idx < len(temp_rects):
+                        rx, ry, rw, rh = temp_rects[idx]
+                        ax, ay, aw, ah = get_window_rect(active_hwnd)
+                        if abs(aw - rw) > 15 or abs(ah - rh) > 15:
+                            resizing_hwnd = active_hwnd
+                            screen_has_resizing = True
+            else:
+                if resizing_hwnd and resizing_hwnd in new_tiled:
+                    idx = new_tiled.index(resizing_hwnd)
+                    ax, ay, aw, ah = get_window_rect(resizing_hwnd)
+                    
+                    curr_x, curr_y, curr_w, curr_h = target_x, target_y, target_w, target_h
+                    for i in range(len(new_tiled)):
+                        if i == idx:
                             if curr_w >= curr_h:
-                                split_w = int((curr_w - window_gap) * ratio)
-                                curr_x = curr_x + split_w + window_gap
-                                curr_w = curr_w - split_w - window_gap
+                                new_ratio = aw / (curr_w - window_gap)
                             else:
-                                split_h = int((curr_h - window_gap) * ratio)
-                                curr_y = curr_y + split_h + window_gap
-                                curr_h = curr_h - split_h - window_gap
+                                new_ratio = ah / (curr_h - window_gap)
+                            new_ratio = max(0.1, min(0.9, new_ratio))
+                            ratios[idx] = new_ratio
+                            break
+                        
+                        ratio = ratios[i] if i < len(ratios) else 0.5
+                        if curr_w >= curr_h:
+                            split_w = int((curr_w - window_gap) * ratio)
+                            curr_x = curr_x + split_w + window_gap
+                            curr_w = curr_w - split_w - window_gap
+                        else:
+                            split_h = int((curr_h - window_gap) * ratio)
+                            curr_y = curr_y + split_h + window_gap
+                            curr_h = curr_h - split_h - window_gap
+                            
+                    resizing_hwnd = None
             
+            # If screen is currently resizing, skip moving other windows until mouse is released
+            if screen_has_resizing:
+                tiled_windows_by_screen[screen] = new_tiled
+                continue
+                
             # Check if layout needs re-tiling (list changed, window maximized, or layout size changed due to taskbar growth)
             has_maximized = any(IsZoomed(hwnd) for hwnd in new_tiled)
             list_changed = (new_tiled != prev_tiled)
@@ -904,16 +921,13 @@ def main():
                 
                 # Restore any maximized window
                 for hwnd in new_tiled:
-                    if IsZoomed(hwnd) and hwnd != resizing_hwnd:
+                    if IsZoomed(hwnd):
                         ShowWindow(hwnd, 9)  # SW_RESTORE
                         
                 n = len(new_tiled)
                 if n > 0:
                     rects = calculate_dwindle_rects(target_x, target_y, target_w, target_h, n, gap=window_gap, ratios=ratios)
                     for i, hwnd in enumerate(new_tiled):
-                        if hwnd == resizing_hwnd:
-                            continue
-                            
                         rx, ry, rw, rh = rects[i]
                         
                         l_off, t_off, r_off, b_off = get_window_border_offsets(hwnd)
