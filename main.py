@@ -550,6 +550,9 @@ def main():
     last_active_w = 0
     last_active_h = 0
     resizing_hwnd = None
+    last_l_button_down = False
+    resize_start_w = 0
+    resize_start_h = 0
     
     def handle_settings_change(name, value):
         nonlocal window_gap, screen_margin
@@ -717,6 +720,7 @@ def main():
 
     def tiling_manager_loop():
         nonlocal tiled_windows_by_screen, dragged_hwnd, last_active_hwnd, last_active_w, last_active_h, resizing_hwnd
+        nonlocal last_l_button_down, resize_start_w, resize_start_h
         if not any(b.isVisible() for b in borders):
             return
             
@@ -727,12 +731,19 @@ def main():
         l_button_down = bool(ctypes.windll.user32.GetAsyncKeyState(0x01) & 0x8000)
         active_hwnd = ctypes.windll.user32.GetForegroundWindow()
         
+        mouse_clicked_down = l_button_down and not last_l_button_down
+        last_l_button_down = l_button_down
+        
         active_size_changed = False
         ax_x, ax_y, aw, ah = get_window_rect(active_hwnd) if active_hwnd else (0, 0, 0, 0)
         if active_hwnd and active_hwnd == last_active_hwnd:
             if abs(aw - last_active_w) > 2 or abs(ah - last_active_h) > 2:
                 active_size_changed = True
                 
+        if mouse_clicked_down:
+            resize_start_w = aw
+            resize_start_h = ah
+            
         last_active_hwnd = active_hwnd
         last_active_w = aw
         last_active_h = ah
